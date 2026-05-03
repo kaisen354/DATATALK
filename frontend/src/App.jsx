@@ -33,7 +33,9 @@ export default function App() {
   const [stageIdx, setStageIdx]           = useState(0);
   const [mode, setMode]                   = useState('auto');
   const [webSearch, setWebSearch]         = useState(false);
-  const stageTimer = useRef(null);
+  const [securityFlash, setSecurityFlash] = useState(false);
+  const stageTimer  = useRef(null);
+  const flashTimer  = useRef(null);
 
   const chat = useChat();
 
@@ -63,6 +65,19 @@ export default function App() {
     if (chat.preprocessResult) setShowUpload(true);
   }, [chat.preprocessResult]);
 
+  // Flash red overlay when a new message carries a security warning or block
+  useEffect(() => {
+    const msgs = chat.messages;
+    if (msgs.length === 0) return;
+    const last = msgs[msgs.length - 1];
+    const status = last?.compliance?.status;
+    if (status === 'warning' || status === 'blocked') {
+      setSecurityFlash(true);
+      clearTimeout(flashTimer.current);
+      flashTimer.current = setTimeout(() => setSecurityFlash(false), 950);
+    }
+  }, [chat.messages]);
+
   const handleSuggestionClick = useCallback((text) => {
     if (text === '__upload__') {
       setShowUpload(true);
@@ -82,6 +97,7 @@ export default function App() {
   return (
     <>
       {showSplash && <SplashScreen onComplete={() => setShowSplash(false)} />}
+      {securityFlash && <div className="security-flash-overlay" />}
 
       <div className="app-shell">
         {/* Sidebar */}
